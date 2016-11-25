@@ -4,3 +4,8 @@ three.js Solar
 
 
 Demo: http://try.kx.is/Solar
+
+
+todo:
+ - 增加土星环
+ - 平滑移动相机
