@@ -12,63 +12,6 @@ camera.position.y = 80;
 camera.position.z = 200;
 
 
-///
-
-var camera // camera
-var cameraPos0 // initial camera position
-var cameraUp0 // initial camera up
-var cameraZoom // camera zoom
-var iniQ // initial quaternion
-var endQ // target quaternion
-var curQ // temp quaternion during slerp
-var vec3 // generic vector object
-var tweenValue // tweenable value 
-
-// init camera
-function setup() {
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000)
-	camera.position = new THREE.Vector3(0, 0, 80)
-	cameraPos0 = camera.position.clone()
-	cameraUp0 = camera.up.clone()
-	cameraZoom = camera.position.z
-}
-
-// set a new target for the camera
-function moveCamera(euler, zoom) {
-	// reset everything
-	endQ = new THREE.Quaternion()
-	iniQ = new THREE.Quaternion().copy(camera.quaternion)
-	curQ = new THREE.Quaternion()
-	vec3 = new THREE.Vector3()
-	tweenValue = 0
-
-	endQ.setFromEuler(euler)
-	TweenMax.to(this, 5, { tweenValue: 1, cameraZoom: zoom, onUpdate: onSlerpUpdate })
-}
-
-var nnn = 0;
-// on every update of the tween
-function onSlerpUpdate(e) {
-	console.log(e);
-	nnn -= 0.0005;
-	// interpolate quaternions with the current tween value
-	THREE.Quaternion.slerp(iniQ, endQ, curQ, nnn)
-
-	// apply new quaternion to camera position
-	vec3.x = cameraPos0.x
-	vec3.y = cameraPos0.y
-	vec3.z = cameraZoom
-	vec3.applyQuaternion(curQ)
-	camera.position.copy(vec3)
-
-	// apply new quaternion to camera up
-	vec3 = cameraUp0.clone()
-	vec3.applyQuaternion(curQ)
-	camera.up.copy(vec3)
-}
-
-
-
 // var cameraHelper = new THREE.CameraHelper(camera);
 // scene.add(cameraHelper);
 
@@ -114,7 +57,6 @@ var material = new THREE.MeshFaceMaterial(materials);
 var sun = new THREE.Mesh(geometry, material);
 scene.add(sun);
 
-
 var mesh = [];
 for (var x in config) {
 	var texture = THREE.ImageUtils.loadTexture('assets/images/' + x + '.jpg', {}, function() { renderer.render(scene, camera); });
@@ -139,23 +81,41 @@ mesh['moon'].position.x = 3;
 moon_obj.add(mesh['moon']);
 scene.add(moon_obj);
 
-// mesh['earth'].add(camera);
-
-
 var earth_tap = false;
+var start_move_cam = false;
+var camera_look_at = { x: 0, y: 0, z: 0 };
+var camera_move_time = 600;
 
 $('body').tap(function() {
-	earth_tap = !earth_tap;
-	if (!earth_tap) {
-		camera.position.x = 200;
-		camera.position.y = 80;
-		camera.position.z = 200;
-	}
-	// setup();
-	// moveCamera(new THREE.Euler(1, 1, 1), 200);
+	new TWEEN.Tween(camera.position)
+		.to({
+			x: 170 * Math.sin(camera_deg),
+			y: 25,
+			z: 170 * Math.cos(camera_deg),
+		}, camera_move_time)
+		.easing(TWEEN.Easing.Sinusoidal.InOut)
+		.onUpdate(function() {})
+		.onComplete(function() {
+			earth_tap = !earth_tap;
+		})
+		.start();
+
+	start_move_cam = true;
+	new TWEEN.Tween(camera_look_at)
+		.to({ x: mesh['earth'].position.x, y: mesh['earth'].position.y, z: mesh['earth'].position.z }, camera_move_time)
+		.easing(TWEEN.Easing.Sinusoidal.InOut)
+		.onUpdate(function() {
+			camera_look_at = this;
+		})
+		.onComplete(function() {
+			start_move_cam = false;
+		})
+		.start();
 });
 
 function render() {
+	TWEEN.update();
+
 	requestAnimationFrame(render);
 	controls.update();
 
@@ -175,6 +135,10 @@ function render() {
 
 	camera_deg = camera_deg + (speed_base * PI2 / 36.5 / 60) >= PI2 ? 0 : camera_deg + (speed_base * PI2 / 36.5 / 60);
 
+	if (start_move_cam) {
+		camera.lookAt(new THREE.Vector3(camera_look_at.x, camera_look_at.y, camera_look_at.z));
+	}
+
 	if (earth_tap) {
 		camera.position.set(170 * Math.sin(camera_deg), 25, 170 * Math.cos(camera_deg));
 		camera.lookAt(mesh['earth'].position);
@@ -190,27 +154,17 @@ function render() {
 render();
 
 
-
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 
 function onDocumentMouseDown(event) {
-
 	event.preventDefault();
-
 	mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
 	mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
-
 	raycaster.setFromCamera(mouse, camera);
-
 	var intersects = raycaster.intersectObjects(objects);
-
 	console.log(intersects);
-
 	if (intersects.length > 0) {
-
 		intersects[0].object.callback();
-
 	}
-
 }

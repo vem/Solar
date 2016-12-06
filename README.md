@@ -8,4 +8,4 @@ Demo: http://try.kx.is/Solar
 
 todo:
  - 增加土星环
- - 平滑移动相机
+ - 点击星球, 相机焦点到星球上面
