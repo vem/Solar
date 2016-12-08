@@ -3579,4 +3579,14 @@ function onDocumentMouseDown(event) {
 		if (look_star_name) star_tap();
 	}
 }
+
+function onDocumentTouchStart(event) {
+	event.preventDefault();
+
+	event.clientX = event.touches[0].clientX;
+	event.clientY = event.touches[0].clientY;
+	onDocumentMouseDown(event);
+}
+
 document.addEventListener('mousedown', onDocumentMouseDown, false);
+document.addEventListener('touchstart', onDocumentTouchStart, false);
