@@ -3416,18 +3416,15 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 var controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-
 camera.position.x = 200;
 camera.position.y = 80;
 camera.position.z = 200;
-
 
 // var cameraHelper = new THREE.CameraHelper(camera);
 // scene.add(cameraHelper);
 
 // var axisHelper = new THREE.AxisHelper(20);
 // scene.add(axisHelper);
-
 
 var galaxy = new THREE.Mesh(
 	new THREE.SphereGeometry(500, segments, segments),
@@ -3437,7 +3434,6 @@ var galaxy = new THREE.Mesh(
 	})
 );
 scene.add(galaxy);
-
 
 var PI2 = Math.PI * 2;
 var moon_obj_deg = 0;
