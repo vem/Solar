@@ -33,7 +33,7 @@ var PI2 = Math.PI * 2;
 var moon_obj_deg = 0;
 var speed_base = 1;
 var segments = 64;
-
+var look_star_name;
 
 var config = {
 	mercury: { revolution: speed_base * PI2 / 8.8 / 60, rotation: PI2 / 1416 / 60, distance: 25, size: 1, deg: rand(1, 6) },
@@ -47,14 +47,13 @@ var config = {
 	moon: { revolution: speed_base * PI2 / 36.5 / 60, rotation: PI2 / 8.8 / 60, distance: 80, size: .4, deg: rand(1, 6) }
 };
 
-var camera_deg = config['earth'].deg - 1.35;
-
 // SUN
 var texture = THREE.ImageUtils.loadTexture('assets/images/sun.jpg', {}, function() { renderer.render(scene, camera); });
 var materials = [new THREE.MeshBasicMaterial({ map: texture })];
 var geometry = new THREE.SphereGeometry(14, segments, segments);
 var material = new THREE.MeshFaceMaterial(materials);
 var sun = new THREE.Mesh(geometry, material);
+sun.name = 'sun';
 scene.add(sun);
 
 var mesh = [];
@@ -73,6 +72,9 @@ for (var x in config) {
 	var line = new THREE.Line(geometry, material);
 	line.rotation.x = Math.PI / 2;
 	scene.add(line);
+
+	mesh[x].name = x;
+	config[x].camera_deg = config[x].deg - 1.35;
 }
 
 var moon_obj = new THREE.Object3D();
@@ -86,12 +88,12 @@ var start_move_cam = false;
 var camera_look_at = { x: 0, y: 0, z: 0 };
 var camera_move_time = 600;
 
-$('body').tap(function() {
+function star_tap() {
 	new TWEEN.Tween(camera.position)
 		.to({
-			x: 170 * Math.sin(camera_deg),
+			x: 170 * Math.sin(config[look_star_name].camera_deg),
 			y: 25,
-			z: 170 * Math.cos(camera_deg),
+			z: 170 * Math.cos(config[look_star_name].camera_deg),
 		}, camera_move_time)
 		.easing(TWEEN.Easing.Sinusoidal.InOut)
 		.onUpdate(function() {})
@@ -102,7 +104,7 @@ $('body').tap(function() {
 
 	start_move_cam = true;
 	new TWEEN.Tween(camera_look_at)
-		.to({ x: mesh['earth'].position.x, y: mesh['earth'].position.y, z: mesh['earth'].position.z }, camera_move_time)
+		.to({ x: mesh[look_star_name].position.x, y: mesh[look_star_name].position.y, z: mesh[look_star_name].position.z }, camera_move_time)
 		.easing(TWEEN.Easing.Sinusoidal.InOut)
 		.onUpdate(function() {
 			camera_look_at = this;
@@ -111,7 +113,7 @@ $('body').tap(function() {
 			start_move_cam = false;
 		})
 		.start();
-});
+}
 
 function render() {
 	TWEEN.update();
@@ -124,6 +126,7 @@ function render() {
 		if (x == 'moon') continue;
 
 		config[x].deg = config[x].deg + config[x].revolution >= PI2 ? 0 : config[x].deg + config[x].revolution;
+		config[x].camera_deg = config[x].camera_deg + config[x].revolution >= PI2 ? 0 : config[x].camera_deg + config[x].revolution;
 		mesh[x].position.set(config[x].distance * Math.sin(config[x].deg), 0, config[x].distance * Math.cos(config[x].deg));
 	}
 
@@ -133,20 +136,14 @@ function render() {
 
 	sun.rotation.y += 0.01;
 
-	camera_deg = camera_deg + (speed_base * PI2 / 36.5 / 60) >= PI2 ? 0 : camera_deg + (speed_base * PI2 / 36.5 / 60);
 
 	if (start_move_cam) {
 		camera.lookAt(new THREE.Vector3(camera_look_at.x, camera_look_at.y, camera_look_at.z));
 	}
 
 	if (earth_tap) {
-		camera.position.set(170 * Math.sin(camera_deg), 25, 170 * Math.cos(camera_deg));
-		camera.lookAt(mesh['earth'].position);
-	} else {
-		// var timer = Date.now() * 0.0005;
-		// camera.position.x = Math.cos(timer) * 10;
-		// camera.position.z = Math.sin(timer) * 10;
-		// camera.lookAt(scene.position);
+		camera.position.set(170 * Math.sin(config[look_star_name].camera_deg), 25, 170 * Math.cos(config[look_star_name].camera_deg));
+		camera.lookAt(mesh[look_star_name].position);
 	}
 
 	renderer.render(scene, camera);
@@ -159,12 +156,17 @@ var mouse = new THREE.Vector2();
 
 function onDocumentMouseDown(event) {
 	event.preventDefault();
+
 	mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
 	mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
 	raycaster.setFromCamera(mouse, camera);
-	var intersects = raycaster.intersectObjects(objects);
-	console.log(intersects);
+
+	var intersects = raycaster.intersectObjects(scene.children);
+
 	if (intersects.length > 0) {
-		intersects[0].object.callback();
+		look_star_name = intersects[0].object.name;
+		if (look_star_name) star_tap();
 	}
 }
+document.addEventListener('mousedown', onDocumentMouseDown, false);
